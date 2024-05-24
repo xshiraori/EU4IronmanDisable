@@ -2,25 +2,25 @@
 #include <iostream>
 
 struct Patch {
-	std::vector<byte> signature;
-	std::uint32_t offset;
-	std::uint8_t instruction;
-	std::uint32_t size;
+	std::vector<rwh::u8> signature;
+	rwh::u32 offset;
+	rwh::u8 instruction;
+	rwh::u32 size;
 };
 
 struct ModuleInformation {
-	std::uintptr_t moduleBase;
-	std::uintptr_t codeSectionBase;
-	std::uint32_t codeSectionSize;
-	std::uintptr_t localModuleBase;
-	HANDLE processHandle;
+	rwh::ptr moduleBase;
+	rwh::ptr codeSectionBase;
+	rwh::u32 codeSectionSize;
+	rwh::ptr localModuleBase;
+	rwh::handle processHandle;
 };
 
 bool retrieveModuleInformation(ModuleInformation& moduleInformation, std::string const& moduleName) {
-	std::uint32_t uiSize = 0;
+	rwh::u32 size = 0;
 	moduleInformation.processHandle = rwh::process::FindProcess(moduleName);
-	moduleInformation.moduleBase = rwh::remote::GetRemoteProcessModule(moduleInformation.processHandle, moduleName, uiSize);
-	moduleInformation.localModuleBase = (std::uintptr_t)rwh::remote::ReadRemoteBytes(moduleInformation.processHandle, moduleInformation.moduleBase, uiSize);
+	moduleInformation.moduleBase = rwh::remote::GetRemoteProcessModule(moduleInformation.processHandle, moduleName, size);
+	moduleInformation.localModuleBase = reinterpret_cast<rwh::ptr>(rwh::remote::ReadRemoteBytes(moduleInformation.processHandle, moduleInformation.moduleBase, size));
 	moduleInformation.codeSectionBase = rwh::module::GetModuleSectionStart(moduleInformation.localModuleBase, ".text", moduleInformation.codeSectionSize);
 
 	return moduleInformation.processHandle == INVALID_HANDLE_VALUE || moduleInformation.codeSectionBase == 0 || moduleInformation.moduleBase == 0 || moduleInformation.localModuleBase == 0;
