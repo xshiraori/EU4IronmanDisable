@@ -61,6 +61,7 @@ int main(int argc, char* argv[]) {
 
 	if (!applyGameSpecificPatches(moduleInformation, gameSpecificPatches))
 	{
+		std::cout << "Error while trying to apply game patches" << std::endl;
 		return -1;
 	}
 
