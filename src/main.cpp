@@ -23,7 +23,7 @@ bool retrieveModuleInformation(ModuleInformation& moduleInformation, std::string
 	moduleInformation.localModuleBase = reinterpret_cast<rwh::ptr>(rwh::remote::ReadRemoteBytes(moduleInformation.processHandle, moduleInformation.moduleBase, size));
 	moduleInformation.codeSectionBase = rwh::module::GetModuleSectionStart(moduleInformation.localModuleBase, ".text", moduleInformation.codeSectionSize);
 
-	return moduleInformation.processHandle == INVALID_HANDLE_VALUE || moduleInformation.codeSectionBase == 0 || moduleInformation.moduleBase == 0 || moduleInformation.localModuleBase == 0;
+	return moduleInformation.processHandle != INVALID_HANDLE_VALUE && moduleInformation.codeSectionBase != 0 && moduleInformation.moduleBase != 0 && moduleInformation.localModuleBase != 0;
 }
 
 bool applyGameSpecificPatches(ModuleInformation targetModuleInformation, auto gameSpecificPatches)
