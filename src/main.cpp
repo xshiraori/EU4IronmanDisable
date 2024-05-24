@@ -1,6 +1,7 @@
 ﻿#include "rwh/rwh.h"
 #include <iostream>
 
+namespace eu4{
 struct Patch {
 	std::vector<rwh::u8> signature;
 	rwh::u32 offset;
@@ -16,6 +17,10 @@ struct ModuleInformation {
 	rwh::handle processHandle;
 };
 
+static const Patch MODULE_FIRST_PATCH = { {0x49, 0xFF, 0xC0, 0x48, 0x8B, 0x55, 0x90, 0x48, 0x8D, 0x4D, 0x90, 0xE8, '?', '?','?', '?', 0x48, 0xC7, 0x45, 0xA8, 0x0F, 0x00, 0x00, 0x00, 0x4C, 0x89, 0x65, 0xA0, 0xC6, 0x45, 0x90, 0x00, 0x45, 0x84, 0xF6 }, 0x23, 0xEB, 0x1 };
+static const Patch MODULE_SECOND_PATCH = { {0xC7, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00, 0x39, 0x05, 0x00, 0x00, 0x0F, 0xB6, 0x45, 0xE0, 0x88, 0x06, 0x48, 0x8D, 0x4E, 0x08, 0x48, 0x8D, 0x55, 0xE8}, 0x00, 0x90, 0xB };
+static const Patch MODULE_PATCH_LIST[] = { MODULE_FIRST_PATCH, MODULE_SECOND_PATCH };
+
 bool retrieveModuleInformation(ModuleInformation& moduleInformation, std::string const& moduleName) {
 	rwh::u32 size = 0;
 	moduleInformation.processHandle = rwh::process::FindProcess(moduleName);
@@ -26,9 +31,9 @@ bool retrieveModuleInformation(ModuleInformation& moduleInformation, std::string
 	return moduleInformation.processHandle != INVALID_HANDLE_VALUE && moduleInformation.codeSectionBase != 0 && moduleInformation.moduleBase != 0 && moduleInformation.localModuleBase != 0;
 }
 
-bool applyGameSpecificPatches(ModuleInformation& targetModuleInformation, auto const& gameSpecificPatches)
+bool applyGameSpecificPatches(ModuleInformation const& targetModuleInformation)
 {
-	for (auto& patchInformation : gameSpecificPatches) {
+	for (auto& patchInformation : MODULE_PATCH_LIST) {
 		auto const patchAddressCopy = rwh::pattern::SearchRangeEx(targetModuleInformation.codeSectionBase, targetModuleInformation.codeSectionSize, patchInformation.signature);
 
 		if (!patchAddressCopy) {
@@ -45,21 +50,17 @@ bool applyGameSpecificPatches(ModuleInformation& targetModuleInformation, auto c
 
 	return true;
 }
+}
 
 int main(int argc, char* argv[]) {
-	ModuleInformation moduleInformation;
-	if (!retrieveModuleInformation(moduleInformation, "eu4.exe"))
+	eu4::ModuleInformation moduleInformation;
+	if (!eu4::retrieveModuleInformation(moduleInformation, "eu4.exe"))
 	{
 		std::cout << "Unable to retrieve module information" << std::endl;
 		return -1;
 	}
 
-	Patch const firstPatch = { {0x49, 0xFF, 0xC0, 0x48, 0x8B, 0x55, 0x90, 0x48, 0x8D, 0x4D, 0x90, 0xE8, '?', '?','?', '?', 0x48, 0xC7, 0x45, 0xA8, 0x0F, 0x00, 0x00, 0x00, 0x4C, 0x89, 0x65, 0xA0, 0xC6, 0x45, 0x90, 0x00, 0x45, 0x84, 0xF6 }, 0x23, 0xEB, 0x1 };
-	Patch const secondPatch = { {0xC7, 0x04, 0x25, 0x00, 0x00, 0x00, 0x00, 0x39, 0x05, 0x00, 0x00, 0x0F, 0xB6, 0x45, 0xE0, 0x88, 0x06, 0x48, 0x8D, 0x4E, 0x08, 0x48, 0x8D, 0x55, 0xE8}, 0x00, 0x90, 0xB };
-
-	std::vector<Patch> gameSpecificPatches{ firstPatch, secondPatch };
-
-	if (!applyGameSpecificPatches(moduleInformation, gameSpecificPatches))
+	if (!eu4::applyGameSpecificPatches(moduleInformation))
 	{
 		std::cout << "Error while trying to apply game patches" << std::endl;
 		return -1;
